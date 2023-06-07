@@ -10,7 +10,7 @@ module Bundler
     # Gets the list of outdated gems and the newer versions that are available.
     class RetrieveOutdated
       def run
-        outdated_gem_versions = {}
+        result = []
         current_specs = Bundler.definition.resolve.sort_by(&:name).uniq(&:name)
 
         # Show changes for all outdated gems
@@ -22,11 +22,11 @@ module Bundler
           outdated_versions = outdated_versions_for_spec(definition, current_spec)
 
           if outdated_versions[:newer_versions].count.positive?
-            outdated_gem_versions[current_spec.name] = outdated_versions_for_spec(definition, current_spec)
+            result << outdated_versions_for_spec(definition, current_spec)
           end
         end
 
-        outdated_gem_versions
+        result
       end
 
       private
