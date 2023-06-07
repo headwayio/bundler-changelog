@@ -15,9 +15,10 @@ module Bundler
         with_changelog.each do |name, data|
           print_header(name, data)
 
-          Bundler::Changelog::ParseChangelog
+          puts Bundler::Changelog::ParseChangelog
             .new(data[:changelog_uri])
             .run(data[:newer_versions])
+            .value_or("\n")
         end
 
         puts "Skipped because no changelog was found: #{without_changelog.keys.join(", ")}"
