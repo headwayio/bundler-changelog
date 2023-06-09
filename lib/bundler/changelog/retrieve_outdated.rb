@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "bundler"
+require_relative "./outdated_version"
 
 # Heavily based on the logic in Bundler's Bundler::CLI::Outdated class:
 # - https://www.rubydoc.info/gems/bundler/Bundler/CLI/Outdated#run-instance_method
@@ -12,18 +13,13 @@ module Bundler
       def run
         result = []
         current_specs = Bundler.definition.resolve.sort_by(&:name).uniq(&:name)
-
-        # Show changes for all outdated gems
-        definition = Bundler.definition(true)
-        Bundler.ui.silence { definition.resolve_remotely! }
-        # Bundler.ui.silence { definition.resolve_with_cache! }
+        definition = resolve_bundler_definitions!
 
         current_specs.each do |current_spec|
-          outdated_versions = outdated_versions_for_spec(definition, current_spec)
+          outdated = outdated_versions_for_spec(definition, current_spec)
+          next unless outdated[:newer_versions].count.positive?
 
-          if outdated_versions[:newer_versions].count.positive?
-            result << outdated_versions_for_spec(definition, current_spec)
-          end
+          result << outdated
         end
 
         result
@@ -31,27 +27,30 @@ module Bundler
 
       private
 
+      def resolve_bundler_definitions!
+        # Show changes for all outdated gems
+        definition = Bundler.definition(true)
+        Bundler.ui.silence { definition.resolve_remotely! }
+        # Bundler.ui.silence { definition.resolve_with_cache! }
+
+        definition
+      end
+
       def outdated_versions_for_spec(definition, current_spec)
-        outdated = {
-          current_spec: current_spec,
-          changelog_uri: nil,
-          newer_versions: []
-        }
+        changelog_uri = nil
+        newer_versions = []
 
         current_version = Gem::Version.new(current_spec.version)
         active_specs = newer_specs_for_gem(definition, current_spec)
 
         active_specs.each do |newer_spec|
-          if newer_spec.metadata["changelog_uri"] && outdated[:changelog].nil?
-            outdated[:changelog_uri] = newer_spec.metadata["changelog_uri"]
-          end
-
+          changelog_uri ||= newer_spec.metadata["changelog_uri"]
           next unless outdated?(newer_spec, current_version)
 
-          outdated[:newer_versions] << newer_spec.version
+          newer_versions << newer_spec.version
         end
 
-        outdated
+        OutdatedVersion.new(current_spec: current_spec, changelog_uri: changelog_uri, newer_versions: newer_versions)
       end
 
       def newer_specs_for_gem(definition, current_spec)
@@ -76,8 +75,11 @@ module Bundler
           spec.match_platform(current_spec.platform)
         end.sort_by(&:version)
 
-        # if !current_spec.version.prerelease? && !options[:pre] && active_specs.size > 1
-        if !current_spec.version.prerelease? && active_specs.size > 1
+        filter_prerelease(active_specs, current_spec.version.prerelease?)
+      end
+
+      def filter_prerelease(active_specs, is_current_prerelease)
+        if !is_current_prerelease && active_specs.size > 1 # && !options[:pre]
           active_specs.delete_if { |b| b.respond_to?(:version) && b.version.prerelease? }
         end
 
