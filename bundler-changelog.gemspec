@@ -33,6 +33,7 @@ Gem::Specification.new do |spec|
   spec.require_paths = ["lib"]
 
   # Uncomment to register a new dependency of your gem
+  spec.add_dependency "dry-cli", "~> 1.0"
   spec.add_dependency "dry-monads", "~> 1.3"
   spec.add_dependency "dry-struct", "~> 1.6"
 

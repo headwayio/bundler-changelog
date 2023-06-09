@@ -10,38 +10,32 @@ module Bundler
   module Changelog
     # Gets the list of outdated gems and the newer versions that are available.
     class RetrieveOutdated
-      def run
-        result = []
-        current_specs = Bundler.definition.resolve.sort_by(&:name).uniq(&:name)
-        definition = resolve_bundler_definitions!
+      def initialize(current_specs)
+        @result = []
+        @definition = Bundler.definition
 
-        current_specs.each do |current_spec|
-          outdated = outdated_versions_for_spec(definition, current_spec)
+        @current_specs = current_specs
+      end
+
+      def run
+        @current_specs.each do |current_spec|
+          outdated = outdated_versions_for_spec(current_spec)
           next unless outdated[:newer_versions].count.positive?
 
-          result << outdated
+          @result << outdated
         end
 
-        result
+        @result
       end
 
       private
 
-      def resolve_bundler_definitions!
-        # Show changes for all outdated gems
-        definition = Bundler.definition(true)
-        Bundler.ui.silence { definition.resolve_remotely! }
-        # Bundler.ui.silence { definition.resolve_with_cache! }
-
-        definition
-      end
-
-      def outdated_versions_for_spec(definition, current_spec)
+      def outdated_versions_for_spec(current_spec)
         changelog_uri = nil
         newer_versions = []
 
         current_version = Gem::Version.new(current_spec.version)
-        active_specs = newer_specs_for_gem(definition, current_spec)
+        active_specs = newer_specs_for_gem(current_spec)
 
         active_specs.each do |newer_spec|
           changelog_uri ||= newer_spec.metadata["changelog_uri"]
@@ -53,8 +47,8 @@ module Bundler
         OutdatedVersion.new(current_spec: current_spec, changelog_uri: changelog_uri, newer_versions: newer_versions)
       end
 
-      def newer_specs_for_gem(definition, current_spec)
-        active_specs = retrieve_active_specs(definition, current_spec)
+      def newer_specs_for_gem(current_spec)
+        active_specs = retrieve_active_specs(current_spec)
         return [] if active_specs.nil? || active_specs.empty?
 
         current_version = Gem::Version.new(current_spec.version)
@@ -67,8 +61,8 @@ module Bundler
         Gem::Version.new(active_spec.version) > current_version
       end
 
-      def retrieve_active_specs(definition, current_spec)
-        active_spec = definition.resolve.find_by_name_and_platform(current_spec.name, current_spec.platform)
+      def retrieve_active_specs(current_spec)
+        active_spec = @definition.resolve.find_by_name_and_platform(current_spec.name, current_spec.platform)
         return unless active_spec
 
         active_specs = active_spec.source.specs.search(current_spec.name).select do |spec|

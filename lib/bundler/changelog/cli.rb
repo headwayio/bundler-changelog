@@ -1,68 +1,46 @@
 # frozen_string_literal: true
 
-require "dry/monads"
+require "dry/cli"
 
-require_relative "./retrieve_outdated"
-require_relative "./parse_changelog"
+require_relative "./runner"
+require_relative "./version"
 
 module Bundler
   module Changelog
-    # Main entry point for changelog script.
-    class CLI
-      include Dry::Monads[:task, :list]
+    module CLI
+      # Main entry point for changelog script.
+      module Commands
+        extend Dry::CLI::Registry
 
-      def run
-        puts "Retrieving outdated gems..."
-        outdated_gems = Bundler::Changelog::RetrieveOutdated.new.run
-        gems_without_changelog, gems_with_changelog = partition_results(outdated_gems)
-        parsed_changelogs = parse_changelogs_async(gems_with_changelog)
+        # Displays the version of the Gem.
+        class Version < Dry::CLI::Command
+          desc "Prints version"
 
-        output_changelogs(parsed_changelogs)
-        output_skipped_gems(gems_without_changelog)
-      end
-
-      private
-
-      def parse_changelogs_async(gem_specs)
-        # See this blog article for a helpful understanding of dry-monads's Task which helped with this logic:
-        # https://troikatech.com/blog/2022/02/08/concurrent-io-using-dry-monads-tasks/
-        List[*gem_specs]
-          .typed(Task)
-          .traverse { |data| task_for_changelog(data) }
-          .value!
-      end
-
-      def task_for_changelog(data)
-        name = data[:current_spec].name
-
-        Task do
-          [changelog_header(name, data)] +
-            Bundler::Changelog::ParseChangelog
-            .new(data[:changelog_uri])
-            .run(data[:newer_versions])
-            .value_or(["\n"])
-        end
-      end
-
-      def output_changelogs(changelogs)
-        changelogs.value.each do |entries|
-          entries.each do |entry|
-            puts entry
+          def call(*)
+            puts Bundler::Changelog::VERSION
           end
         end
-      end
 
-      def output_skipped_gems(gems_without_changelog)
-        gem_names = gems_without_changelog.map { |gem| gem[:current_spec].name }.join(", ")
-        puts "Skipped because no changelog was found: #{gem_names}"
-      end
+        # Lists the changelog entries for outdated gems.
+        class Changelogs < Dry::CLI::Command
+          desc "Output changelog entries for all outdated gems"
 
-      def partition_results(results)
-        results.partition { |v| v[:changelog_uri].nil? } # .map(&:to_h)
-      end
+          option :group, desc: "Gemfile group to view"
+          option :gems, type: :array, desc: "List of gems to view"
 
-      def changelog_header(name, data)
-        "Changelog for #{name} (#{data[:current_spec].version}): #{data[:changelog_uri]}"
+          example [
+            "                     # Outputs newer changelog entries for outdated gems",
+            "--group development  # Outputs newer changelog entries for gems in the development group",
+            "--gems rake,rspec    # Outputs newer changelog entries for Rake and RSpec"
+          ]
+
+          def call(group: nil, gems: nil, **)
+            Bundler::Changelog::Runner.new.run(group, gems)
+          end
+        end
+
+        register "version", Version, aliases: ["v", "-v", "--version"]
+        register "list", Changelogs
       end
     end
   end
