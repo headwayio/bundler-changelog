@@ -23,7 +23,10 @@ module Bundler
       def resolve_bundler_definitions!
         # Show changes for all outdated gems
         definition = Bundler.definition(true)
-        # definition = Bundler::Definition.build(Bundler.default_gemfile, Bundler.default_lockfile, true, optional_groups: @group || [])
+        # definition = Bundler::Definition.build(Bundler.default_gemfile,
+        #                                        Bundler.default_lockfile,
+        #                                        true,
+        #                                        optional_groups: @group || [])
 
         Bundler.ui.silence { definition.resolve_remotely! }
         # Bundler.ui.silence { definition.resolve_with_cache! }
