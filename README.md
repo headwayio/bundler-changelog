@@ -1,9 +1,14 @@
 # Bundler::Changelog
 
-Gathers the recent changelog entries for your outdated gems to save you time when researching upgrades.
+`bundler-changelog` is a command-line tool that gathers the recent changelog entries for your outdated gems to save you time when researching upgrades.
 
 ## Installation
 
+This gem is not on rubygems yet. For now, you can add the gem to your project with:
+
+    gem 'bundler-changelog', github: 'noahsettersten/bundler-changelog', require: false, group: :development
+
+<!--
 Install the gem and add to the application's Gemfile by executing:
 
     $ bundle add bundler-changelog
@@ -11,6 +16,7 @@ Install the gem and add to the application's Gemfile by executing:
 If bundler is not being used to manage dependencies, install the gem by executing:
 
     $ gem install bundler-changelog
+-->
 
 ## Example Output
 
