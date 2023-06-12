@@ -14,6 +14,8 @@ module Bundler
 
       def run(group, gem_names)
         puts "Gathering changelog entries for outdated gems..."
+        puts ""
+
         installed_gems = Bundler::Changelog::RetrieveInstalledGems.new(group, gem_names).run
         newer_gem_versions = Bundler::Changelog::RetrieveOutdated.new(installed_gems).run
         gems_without_changelog, gems_with_changelog = partition_results(newer_gem_versions)
@@ -42,7 +44,7 @@ module Bundler
             Bundler::Changelog::ParseChangelog
             .new(data[:changelog_uri])
             .run(data[:newer_versions])
-            .value_or(["\n"])
+            .value_or([])
         end
       end
 
@@ -51,7 +53,7 @@ module Bundler
           entries.each do |entry|
             if entry.is_a?(Array)
               # A group of lines (e.g. the changes for an entire gem version)
-              entry.each { |line| puts "  #{line}" }
+              entry.each { |line| puts "    #{line}" }
             else
               # A single line (e.g. header for gem)
               puts entry
@@ -68,11 +70,11 @@ module Bundler
       end
 
       def partition_results(results)
-        results.partition { |v| v[:changelog_uri].nil? } # .map(&:to_h)
+        results.partition { |v| v[:changelog_uri].nil? }
       end
 
       def changelog_header(name, data)
-        "- Changelog for #{name} (#{data[:current_spec].version}): #{data[:changelog_uri]}"
+        "- #{name} (Currently installed: #{data[:current_spec].version}): #{data[:changelog_uri]}"
       end
     end
   end
