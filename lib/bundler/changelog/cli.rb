@@ -2,8 +2,8 @@
 
 require "dry/cli"
 
-require_relative "./runner"
-require_relative "./version"
+require_relative "runner"
+require_relative "version"
 
 module Bundler
   module Changelog

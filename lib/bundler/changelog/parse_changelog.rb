@@ -4,9 +4,9 @@ require "net/http"
 require "uri"
 require "dry/monads"
 
-require_relative "./parser/alternative_heading"
-require_relative "./parser/heading"
-require_relative "./download_changelog"
+require_relative "parser/alternative_heading"
+require_relative "parser/heading"
+require_relative "download_changelog"
 
 module Bundler
   module Changelog

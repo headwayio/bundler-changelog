@@ -2,9 +2,9 @@
 
 require "dry/monads"
 
-require_relative "./retrieve_installed_gems"
-require_relative "./retrieve_outdated"
-require_relative "./parse_changelog"
+require_relative "retrieve_installed_gems"
+require_relative "retrieve_outdated"
+require_relative "parse_changelog"
 
 module Bundler
   module Changelog

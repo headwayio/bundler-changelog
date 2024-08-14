@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require "bundler"
-require_relative "./outdated_version"
+require_relative "outdated_version"
 
 # Heavily based on the logic in Bundler's Bundler::CLI::Outdated class:
 # - https://www.rubydoc.info/gems/bundler/Bundler/CLI/Outdated#run-instance_method
